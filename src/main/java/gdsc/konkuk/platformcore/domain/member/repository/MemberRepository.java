@@ -19,4 +19,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     Optional<Member> findByEmail(String memberEmail);
 
     List<Member> findAllByBatch(String batch);
+
+    List<String> findExistingStudentIds(List<String> studentIds);
 }

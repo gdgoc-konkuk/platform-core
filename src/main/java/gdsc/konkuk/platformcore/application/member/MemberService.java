@@ -49,6 +49,25 @@ public class MemberService {
         return memberRepository.save(MemberCreateCommand
                 .toEntity(memberCreateCommand));
     }
+    @Transactional
+    public List<Member> bulkRegister(List<MemberCreateCommand> memberCreateCommands) {
+        List<String> studentIds = memberCreateCommands.stream()
+            .map(MemberCreateCommand::getStudentId)
+            .toList();
+
+        List<String> existingStudentIds = memberRepository.findExistingStudentIds(studentIds);
+        if (!existingStudentIds.isEmpty()) {
+            throw UserAlreadyExistException.of(
+                MemberErrorCode.USER_ALREADY_EXISTS,
+                "이미 존재하는 유저 학번 List : " + existingStudentIds
+            );
+        }
+
+        List<Member> members = memberCreateCommands.stream()
+                .map(MemberCreateCommand::toEntity)
+                .toList();
+        return memberRepository.saveAll(members);
+    }
 
     @Transactional
     public void withdraw(Long currentId) {
