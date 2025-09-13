@@ -20,5 +20,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     List<Member> findAllByBatch(String batch);
 
+    @Query("SELECT m.studentId FROM Member m WHERE m.studentId IN :studentIds")
     List<String> findExistingStudentIds(List<String> studentIds);
 }
