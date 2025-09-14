@@ -3,6 +3,7 @@ package gdsc.konkuk.platformcore.controller.member;
 import static com.epages.restdocs.apispec.ResourceDocumentation.headerWithName;
 import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyString;
 import static org.mockito.BDDMockito.given;
@@ -32,6 +33,7 @@ import gdsc.konkuk.platformcore.controller.member.dtos.MemberUpdateRequest;
 import gdsc.konkuk.platformcore.domain.attendance.entity.AttendanceType;
 import gdsc.konkuk.platformcore.domain.member.entity.Member;
 import gdsc.konkuk.platformcore.domain.member.entity.MemberRole;
+import gdsc.konkuk.platformcore.domain.member.repository.MemberRepository;
 import gdsc.konkuk.platformcore.filter.auth.JwtTokenProvider;
 import gdsc.konkuk.platformcore.util.annotation.RestDocsTest;
 import gdsc.konkuk.platformcore.util.fixture.member.MemberAttendancesFixture;
@@ -60,6 +62,9 @@ class MemberControllerTest {
 
     @MockBean
     private MemberService memberService;
+
+    @MockBean
+    private MemberRepository memberRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -219,6 +224,128 @@ class MemberControllerTest {
         result.andDo(print()).andExpect(status().isBadRequest());
     }
 
+
+    @Test
+    @DisplayName("여러 멤버 회원 가입 성공")
+    void should_success_when_bulk_new_member() throws Exception {
+        // given
+        Member member = MemberFixture.builder().role(MemberRole.CORE).build().getFixture();
+        String jwt = jwtTokenProvider.createToken(member);
+        List<MemberRegisterRequest> memberRegisterRequests = List.of(
+                MemberRegisterRequestFixture.builder().studentId("202400000").build()
+                        .getFixture(),
+                MemberRegisterRequestFixture.builder().studentId("202400001").build()
+                        .getFixture(),
+                MemberRegisterRequestFixture.builder().studentId("202400002").build()
+                        .getFixture());
+        List<Member> memberToRegister = List.of(
+                MemberFixture.builder().studentId("202400000").build().getFixture(),
+                MemberFixture.builder().studentId("202400001").build().getFixture(),
+                MemberFixture.builder().studentId("202400002").build().getFixture(),
+                MemberFixture.builder().studentId("202400003").build().getFixture(),
+                MemberFixture.builder().studentId("202400004").build().getFixture());
+        given(memberService.bulkRegister(any()))
+                .willReturn(memberToRegister);
+
+        // when
+        ResultActions result =
+                mockMvc.perform(
+                        RestDocumentationRequestBuilders.post("/api/v1/members/bulk")
+                                .contentType(APPLICATION_JSON)
+                                .header("Authorization", "Bearer " + jwt)
+                                .content(objectMapper.writeValueAsString(memberRegisterRequests))
+                                .with(csrf()));
+
+        // then
+        result
+                .andDo(print())
+                .andExpect(status().isCreated())
+                .andDo(
+                        document(
+                                "member/bulk_register",
+                                preprocessRequest(prettyPrint()),
+                                preprocessResponse(prettyPrint()),
+                                resource(
+                                        ResourceSnippetParameters.builder()
+                                                .description("여러 멤버 회원 가입 성공")
+                                                .tag("member")
+                                                .responseHeaders(
+                                                        headerWithName("Location").description(
+                                                                "등록한 Member URI"))
+                                                .requestFields(
+                                                        fieldWithPath("[].studentId").description(
+                                                                "회원 아이디"),
+                                                        fieldWithPath("[].email").description(
+                                                                "이메일"),
+                                                        fieldWithPath("[].name").description(
+                                                                "이름"),
+                                                        fieldWithPath("[].department").description(
+                                                                "학과"),
+                                                        fieldWithPath("[].batch").description(
+                                                                "배치"),
+                                                        fieldWithPath("[].role").description(
+                                                                "역할"))
+                                                .responseFields(
+                                                        fieldWithPath("success").description(true),
+                                                        fieldWithPath("message").description(
+                                                                "회원 가입 성공"),
+                                                        fieldWithPath("data").description("null"))
+                                                .build())));
+    }
+
+    @Test
+    @DisplayName("여러 멤버 회원 가입 실패 - 이미 존재하는 학번이 포함된 경우")
+    void should_throw_UserAlreadyExistException_when_studentId_already_exists() throws Exception {
+        // given
+        Member member = MemberFixture.builder().role(MemberRole.CORE).build().getFixture();
+        String jwt = jwtTokenProvider.createToken(member);
+
+        List<MemberRegisterRequest> memberRegisterRequests = List.of(
+                MemberRegisterRequestFixture.builder().studentId("202400000").build().getFixture(),
+                MemberRegisterRequestFixture.builder().studentId("202400001").build().getFixture(), // 중복 학번
+                MemberRegisterRequestFixture.builder().studentId("202400002").build().getFixture()
+        );
+
+        given(memberService.bulkRegister(argThat(requests ->
+            requests.stream().anyMatch(request -> "202400001".equals(request.getStudentId()))
+        )))
+        .willThrow(UserAlreadyExistException.class);
+
+        // when
+        ResultActions result =
+                mockMvc.perform(
+                        RestDocumentationRequestBuilders.post("/api/v1/members/bulk")
+                                .contentType(APPLICATION_JSON)
+                                .header("Authorization", "Bearer " + jwt)
+                                .content(objectMapper.writeValueAsString(memberRegisterRequests))
+                                .with(csrf()));
+
+        // then
+        result
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andDo(
+                        document(
+                                "member/bulk_register_fail",
+                                preprocessRequest(prettyPrint()),
+                                preprocessResponse(prettyPrint()),
+                                resource(
+                                        ResourceSnippetParameters.builder()
+                                                .description("여러 멤버 회원 가입 실패 - 중복 학번 포함")
+                                                .tag("member")
+                                                .requestFields(
+                                                        fieldWithPath("[].studentId").description("회원 아이디"),
+                                                        fieldWithPath("[].email").description("이메일"),
+                                                        fieldWithPath("[].name").description("이름"),
+                                                        fieldWithPath("[].department").description("학과"),
+                                                        fieldWithPath("[].batch").description("배치"),
+                                                        fieldWithPath("[].role").description("역할"))
+                                                .responseFields(
+                                                        fieldWithPath("success").description(false),
+                                                        fieldWithPath("message").description("에러 메시지"),
+                                                        fieldWithPath("errorCode").description("에러 코드")) // data 제거, errorCode 추가
+                                                .build())));
+    }
     @Test
     @DisplayName("회원 탈퇴 성공")
     void should_success_when_delete_member() throws Exception {
