@@ -14,6 +14,6 @@ public class UserAlreadyExistException extends BusinessException {
 
     }
     public static UserAlreadyExistException of(CustomErrorCode errorCode, String causeMember) {
-        return new UserAlreadyExistException(errorCode, errorCode.getLogMessage()+causeMember);
+        return new UserAlreadyExistException(errorCode, errorCode.getLogMessage()+" "+causeMember);
     }
 }

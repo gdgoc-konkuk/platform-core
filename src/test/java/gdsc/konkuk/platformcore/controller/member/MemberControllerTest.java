@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gdsc.konkuk.platformcore.application.member.MemberService;
 import gdsc.konkuk.platformcore.application.member.dtos.AttendanceUpdateCommand;
 import gdsc.konkuk.platformcore.application.member.dtos.MemberCreateCommand;
+import gdsc.konkuk.platformcore.application.member.exceptions.MemberErrorCode;
 import gdsc.konkuk.platformcore.application.member.exceptions.UserAlreadyExistException;
 import gdsc.konkuk.platformcore.controller.member.dtos.AttendanceUpdateRequest;
 import gdsc.konkuk.platformcore.controller.member.dtos.MemberRegisterRequest;
@@ -221,7 +222,7 @@ class MemberControllerTest {
                                 .with(csrf()));
 
         // then
-        result.andDo(print()).andExpect(status().isBadRequest());
+        result.andDo(print()).andExpect(status().isConflict());
     }
 
 
@@ -309,7 +310,10 @@ class MemberControllerTest {
         given(memberService.bulkRegister(argThat(requests ->
             requests.stream().anyMatch(request -> "202400001".equals(request.getStudentId()))
         )))
-        .willThrow(UserAlreadyExistException.class);
+        .willThrow(UserAlreadyExistException.of(
+            MemberErrorCode.USER_ALREADY_EXISTS,
+            "이미 존재하는 유저 학번 List : [202400001]"  // 테스트용 메시지
+        ));
 
         // when
         ResultActions result =
@@ -323,7 +327,7 @@ class MemberControllerTest {
         // then
         result
                 .andDo(print())
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isConflict())
                 .andDo(
                         document(
                                 "member/bulk_register_fail",
