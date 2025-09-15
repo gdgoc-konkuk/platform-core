@@ -144,7 +144,7 @@ class MemberServiceTest {
             memberCreateCommand2.getStudentId(),
             memberCreateCommand3.getStudentId()
         );
-        given(memberRepository.findExistingStudentIds(studentIds))
+        given(memberFinder.filterExistingStudentIds(studentIds))
             .willReturn(List.of("12345678"));
 
         // when & then
