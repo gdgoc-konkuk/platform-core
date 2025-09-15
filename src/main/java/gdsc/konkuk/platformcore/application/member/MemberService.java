@@ -55,7 +55,7 @@ public class MemberService {
             .map(MemberCreateCommand::getStudentId)
             .toList();
 
-        List<String> existingStudentIds = memberRepository.findExistingStudentIds(studentIds);
+        List<String> existingStudentIds = memberFinder.filterExistingStudentIds(studentIds);
         if (!existingStudentIds.isEmpty()) {
             throw UserAlreadyExistException.of(
                 MemberErrorCode.USER_ALREADY_EXISTS,
