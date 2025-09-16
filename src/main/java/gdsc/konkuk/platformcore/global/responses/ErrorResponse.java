@@ -25,4 +25,7 @@ public class ErrorResponse extends Response {
     public static ErrorResponse of(final String message, final String errorCode) {
         return new ErrorResponse(message, errorCode);
     }
+    public static ErrorResponse of(final String message, final CustomErrorCode errorCode) {
+        return new ErrorResponse(message, errorCode.getName());
+    }
 }

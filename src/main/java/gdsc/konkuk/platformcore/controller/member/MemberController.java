@@ -47,6 +47,17 @@ public class MemberController {
         return ResponseEntity.created(getCreatedURI(registeredMember.getId()))
                 .body(SuccessResponse.messageOnly());
     }
+    @PostMapping("/bulk")
+    public ResponseEntity<SuccessResponse> bulkSignup(
+            @RequestBody @Valid List<MemberRegisterRequest> registerRequests) {
+        List<Member> registeredMembers = memberService.bulkRegister(
+                registerRequests.stream()
+                        .map(MemberRegisterRequest::toCommand)
+                        .toList()
+        );
+        return ResponseEntity.created(getCreatedURI((long)registeredMembers.size()))
+                .body(SuccessResponse.messageOnly());
+    }
 
     @DeleteMapping("/{batch}/{memberId}")
     public ResponseEntity<SuccessResponse> withdraw(

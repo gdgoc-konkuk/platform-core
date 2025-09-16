@@ -24,6 +24,9 @@ public class MemberFinder {
                 .findById(memberId)
                 .orElseThrow(() -> UserNotFoundException.of(MemberErrorCode.USER_NOT_FOUND));
     }
+    public List<String> filterExistingStudentIds(List<String> studentIds) {
+        return memberRepository.findExistingStudentIds(studentIds);
+    }
 
     public Map<Long, Member> fetchMembersByIdsAndBatch(List<Long> memberIds, String batch) {
         List<Member> members = memberRepository.findAllByIdsAndBatch(memberIds, batch);

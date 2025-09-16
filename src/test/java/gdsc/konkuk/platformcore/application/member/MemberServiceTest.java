@@ -1,5 +1,6 @@
 package gdsc.konkuk.platformcore.application.member;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,6 +25,9 @@ import org.junit.jupiter.api.function.Executable;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.Collections;
+import java.util.List;
 
 class MemberServiceTest {
 
@@ -87,6 +91,67 @@ class MemberServiceTest {
 
         // then
         assertThrows(UserAlreadyExistException.class, action);
+    }
+
+    @Test
+    @DisplayName("bulkRegister : bulk로 가입하려는 멤버들 회원가입 성공")
+    void should_success_when_newMembers_bulkRegister() {
+        // given
+        MemberCreateCommand memberCreateCommand1 = MemberRegisterRequestFixture.builder().build()
+                .getFixture()
+                .toCommand();
+        MemberCreateCommand memberCreateCommand2 = MemberRegisterRequestFixture.builder().build()
+                .getFixture()
+                .toCommand();
+
+        Member savedMember1 = MemberFixture.builder().build().getFixture();
+        Member savedMember2 = MemberFixture.builder().build().getFixture();
+
+        List<String> studentIds = List.of(
+            memberCreateCommand1.getStudentId(),
+            memberCreateCommand2.getStudentId()
+        );
+
+        given(memberRepository.findExistingStudentIds(studentIds))
+                .willReturn(Collections.emptyList()); // 기존 회원 없음
+        given(memberRepository.saveAll(any(List.class)))
+                .willReturn(List.of(savedMember1, savedMember2));
+
+        // when
+        var actual = subject.bulkRegister(
+                List.of(memberCreateCommand1, memberCreateCommand2));
+
+        // then
+        assertNotNull(actual);
+        assertThat(actual).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("bulkRegister : bulk로 가입하려는 멤버 중 기등록된 회원이 존재하는 경우 회원가입 실패")
+    void should_fail_when_already_exist_members_bulkRegister() {
+        // given
+        MemberCreateCommand memberCreateCommand1 = MemberRegisterRequestFixture.builder()
+                .studentId("12345678")
+                .build().getFixture().toCommand();
+        MemberCreateCommand memberCreateCommand2 = MemberRegisterRequestFixture.builder()
+                .studentId("87654321")
+                .build().getFixture().toCommand();
+        MemberCreateCommand memberCreateCommand3 = MemberRegisterRequestFixture.builder()
+                .studentId("12344321")
+                .build().getFixture().toCommand();
+        List<String> studentIds = List.of(
+            memberCreateCommand1.getStudentId(),
+            memberCreateCommand2.getStudentId(),
+            memberCreateCommand3.getStudentId()
+        );
+        given(memberFinder.filterExistingStudentIds(studentIds))
+            .willReturn(List.of("12345678"));
+
+        // when & then
+        assertThrows(UserAlreadyExistException.class,
+            () -> subject.bulkRegister(List.of(
+                    memberCreateCommand1, memberCreateCommand2,memberCreateCommand3
+            )));
     }
 
     @Test
