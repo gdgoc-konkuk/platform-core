@@ -1,5 +1,6 @@
 package gdsc.konkuk.platformcore.global.controller;
 
+import gdsc.konkuk.platformcore.application.member.exceptions.MemberErrorCode;
 import gdsc.konkuk.platformcore.application.member.exceptions.UserAlreadyExistException;
 import gdsc.konkuk.platformcore.global.exceptions.BusinessException;
 import gdsc.konkuk.platformcore.global.exceptions.GlobalErrorCode;
@@ -49,7 +50,7 @@ public class GlobalExceptionHandler {
     protected ResponseEntity<ErrorResponse> handleUserAlreadyExistException(
             UserAlreadyExistException e) {
         log.error("UserAlreadyExistException Caught!", e);
-        final ErrorResponse response = ErrorResponse.of(e.getLogMessage(), e.getName());
+        final ErrorResponse response = ErrorResponse.of(e.getLogMessage(), MemberErrorCode.USER_ALREADY_EXISTS);
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
