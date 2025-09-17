@@ -2,9 +2,11 @@ package gdsc.konkuk.platformcore.external.email;
 
 import static gdsc.konkuk.platformcore.global.consts.PlatformConstants.EMAIL_RECEIVER_NAME_REGEXP;
 
+import gdsc.konkuk.platformcore.application.email.EmailService;
 import gdsc.konkuk.platformcore.application.email.dtos.EmailTaskInfo;
 import gdsc.konkuk.platformcore.domain.email.entity.EmailDetail;
 import gdsc.konkuk.platformcore.domain.email.entity.EmailReceiver;
+import gdsc.konkuk.platformcore.domain.email.entity.EmailSendStatus;
 import gdsc.konkuk.platformcore.external.email.exceptions.EmailClientErrorCode;
 import gdsc.konkuk.platformcore.external.email.exceptions.EmailSendingException;
 import jakarta.mail.MessagingException;
@@ -23,11 +25,14 @@ import org.springframework.stereotype.Component;
 public class EmailClient {
 
     private final JavaMailSender javaMailSender;
+    private final EmailService emailService;
 
     public void sendEmailToReceivers(EmailTaskInfo emailTaskInfo) {
         var emailDetail = emailTaskInfo.emailTask().getEmailDetail();
         var receivers = emailTaskInfo.emailReceivers();
-        receivers.forEach(receiver -> sendEmail(receiver, emailDetail));
+        receivers.stream()
+                .filter(receiver -> receiver.getSendStatus().equals(EmailSendStatus.WAITING))
+                .forEach(receiver -> sendEmail(receiver, emailDetail));
     }
 
     public String replaceNameToken(String content, String name) {
@@ -48,6 +53,7 @@ public class EmailClient {
             log.info("Sending email to {}", to);
             MimeMessage message = generateMimeMessage(to, emailDetail);
             javaMailSender.send(message);
+            emailService.completeEmailReceiver(to.getId());
         } catch (MailParseException | MessagingException e) {
             throw EmailSendingException.of(EmailClientErrorCode.MAIL_PARSING_ERROR, e.getMessage());
         } catch (MailException e) {

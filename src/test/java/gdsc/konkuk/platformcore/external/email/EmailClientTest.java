@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
+import gdsc.konkuk.platformcore.application.email.EmailService;
 import gdsc.konkuk.platformcore.application.email.dtos.EmailTaskInfo;
 import gdsc.konkuk.platformcore.domain.email.entity.EmailDetail;
 import gdsc.konkuk.platformcore.domain.email.entity.EmailReceiver;
@@ -31,13 +32,15 @@ class EmailClientTest {
 
     @Mock
     private JavaMailSender javaMailSender;
+    @Mock
+    private EmailService emailService;
 
     private EmailClient emailClient;
 
     @BeforeEach
     void setUp() {
         openMocks(this);
-        emailClient = spy(new EmailClient(javaMailSender));
+        emailClient = spy(new EmailClient(javaMailSender, emailService));
     }
 
     @Test
