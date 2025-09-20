@@ -74,6 +74,13 @@ public class EmailService {
     }
 
     @Transactional
+    public void completeEmailReceiver(Long receiverId) {
+        EmailReceiver receiver = emailReceiverRepository.findById(receiverId)
+            .orElseThrow(() -> EmailNotFoundException.of(EmailErrorCode.EMAIL_NOT_FOUND));
+        receiver.completeSend();
+    }
+
+    @Transactional
     public EmailTask update(Long emailId, EmailTaskUpsertCommand command) {
         EmailTask task = findById(emailId);
 

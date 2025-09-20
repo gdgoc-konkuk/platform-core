@@ -7,6 +7,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.when;
 import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.MockitoAnnotations.openMocks;
 
 import gdsc.konkuk.platformcore.application.email.dtos.EmailTaskInfo;
@@ -85,6 +86,40 @@ class EmailServiceTest {
         assertEquals(emailTask2.getId(), actual.get(1).emailTask().getId());
     }
 
+    @Test
+    @DisplayName("이메일 수신자 완료 처리 - 수신자를 찾을 수 없는 경우 예외 발생")
+    void completeEmailReceiver_EmailNotFound_ThrowsException() {
+        // given
+        Long receiverId = 999L;
+        given(emailReceiverRepository.findById(receiverId))
+            .willReturn(Optional.empty());
+
+        // when & then
+        EmailNotFoundException exception = assertThrows(
+            EmailNotFoundException.class,
+            () -> subject.completeEmailReceiver(receiverId)
+        );
+
+        verify(emailReceiverRepository).findById(receiverId);
+
+    }
+
+    @Test
+    @DisplayName("이메일 수신자 완료 처리 - null ID로 호출시 예외 발생")
+    void completeEmailReceiver_NullId_ThrowsException() {
+        // given
+        Long receiverId = null;
+        given(emailReceiverRepository.findById(receiverId))
+            .willReturn(Optional.empty());
+
+        // when & then
+        EmailNotFoundException exception = assertThrows(
+            EmailNotFoundException.class,
+            () -> subject.completeEmailReceiver(receiverId)
+        );
+
+        verify(emailReceiverRepository).findById(null);
+    }
 
     @Test
     @DisplayName("getTaskDetails : 특정 이메일 전송 작업 조회 성공")

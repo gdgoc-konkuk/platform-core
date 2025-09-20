@@ -1,7 +1,7 @@
 package gdsc.konkuk.platformcore.external.email;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.eq;
@@ -11,9 +11,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 
+import gdsc.konkuk.platformcore.application.email.EmailService;
 import gdsc.konkuk.platformcore.application.email.dtos.EmailTaskInfo;
 import gdsc.konkuk.platformcore.domain.email.entity.EmailDetail;
 import gdsc.konkuk.platformcore.domain.email.entity.EmailReceiver;
+import gdsc.konkuk.platformcore.domain.email.entity.EmailSendStatus;
 import gdsc.konkuk.platformcore.domain.email.entity.EmailTask;
 import gdsc.konkuk.platformcore.external.email.exceptions.EmailSendingException;
 import jakarta.mail.internet.MimeMessage;
@@ -31,13 +33,15 @@ class EmailClientTest {
 
     @Mock
     private JavaMailSender javaMailSender;
+    @Mock
+    private EmailService emailService;
 
     private EmailClient emailClient;
 
     @BeforeEach
     void setUp() {
         openMocks(this);
-        emailClient = spy(new EmailClient(javaMailSender));
+        emailClient = spy(new EmailClient(javaMailSender, emailService));
     }
 
     @Test
@@ -109,5 +113,74 @@ class EmailClientTest {
 
         // then
         assertEquals("안녕하세요, guest1님 합격을 축하드립니다!. guest1님과 함께할 수 있어 기쁩니다.", result);
+    }
+
+    @Test
+    @DisplayName("completeSend() 호출 시 상태가 COMPLETED로 변경되고 시간이 설정된다")
+    void completeSend_ShouldUpdateStatusAndTimestamps() {
+        // given
+        EmailReceiver emailReceiver = EmailReceiver.builder()
+            .emailTaskId(1L)
+            .email("test@example.com")
+            .name("테스트 사용자")
+            .build();
+
+        LocalDateTime beforeCall = LocalDateTime.now().minusSeconds(1);
+
+        // when
+        emailReceiver.completeSend();
+
+        // then
+        LocalDateTime afterCall = LocalDateTime.now().plusSeconds(1);
+
+        assertAll(
+            () -> assertThat(emailReceiver.getSendStatus()).isEqualTo(EmailSendStatus.COMPLETED),
+            () -> assertThat(emailReceiver.getStatusUpdatedAt()).isNotNull(),
+            () -> assertThat(emailReceiver.getStatusUpdatedAt()).isAfter(beforeCall),
+            () -> assertThat(emailReceiver.getStatusUpdatedAt()).isBefore(afterCall),
+            () -> assertThat(emailReceiver.getSentAt()).isNotNull(),
+            () -> assertThat(emailReceiver.getSentAt()).isAfter(beforeCall),
+            () -> assertThat(emailReceiver.getSentAt()).isBefore(afterCall)
+        );
+    }
+
+    @Test
+    @DisplayName("WAITING 상태에서 completeSend() 호출 시 정상 동작")
+    void completeSend_FromWaitingStatus_ShouldWork() {
+        // given
+        EmailReceiver emailReceiver = EmailReceiver.builder()
+            .emailTaskId(1L)
+            .email("test@example.com")
+            .name("테스트 사용자")
+            .build();
+
+        // EmailReceiver는 생성시 WAITING 상태
+        assertThat(emailReceiver.getSendStatus()).isEqualTo(EmailSendStatus.WAITING);
+
+        // when
+        emailReceiver.completeSend();
+
+        // then
+        assertThat(emailReceiver.getSendStatus()).isEqualTo(EmailSendStatus.COMPLETED);
+    }
+
+        @Test
+    @DisplayName("completeSend() 호출 전후 sentAt 필드 변화 확인")
+    void completeSend_SentAtField_ShouldBeSetCorrectly() {
+        // given
+        EmailReceiver emailReceiver = EmailReceiver.builder()
+            .emailTaskId(1L)
+            .email("test@example.com")
+            .name("테스트 사용자")
+            .build();
+
+        // 초기 상태에서는 sentAt이 null이어야 함
+        assertThat(emailReceiver.getSentAt()).isNull();
+
+        // when
+        emailReceiver.completeSend();
+
+        // then
+        assertThat(emailReceiver.getSentAt()).isNotNull();
     }
 }
