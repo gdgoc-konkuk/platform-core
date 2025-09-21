@@ -66,6 +66,12 @@ public class EmailReceiver {
         }
     }
 
+    public void completeSend() {
+        this.sendStatus = EmailSendStatus.COMPLETED;
+        this.statusUpdatedAt = LocalDateTime.now();
+        this.sentAt = LocalDateTime.now();
+    }
+
     public boolean isPendingTimeout(int timeoutMinutes) {
         return this.sendStatus == EmailSendStatus.PENDING &&
             this.statusUpdatedAt != null &&
