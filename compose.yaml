@@ -68,7 +68,16 @@ services:
       retries: 3
       start_period: 3m
       start_interval: 5s
-
+  certbot-renew:
+    image: docker:cli
+    container_name: certbot-renew
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: /bin/sh -c "while :; do docker exec certbot certbot renew && docker exec nginx nginx -s reload; sleep 12d; done"
+    depends_on:
+      - certbot
+      - nginx
   certbot:
     image: certbot/certbot:latest
     container_name: certbot
