@@ -99,8 +99,7 @@ services:
     # example: echo "test" > ./certbot/data/.well-known/acme-challenge/test
     # Second, run the command below
     # docker compose run --rm --entrypoint "" certbot certbot certonly --webroot --webroot-path /var/www/certbot -d {your_domain} --email {your_email} --agree-tos --non-interactive
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12d & wait $${!}; done;'"
-
+    entrypoint: "tail -f /dev/null"
   autoheal:
     image: willfarrell/autoheal:latest
     container_name: autoheal
