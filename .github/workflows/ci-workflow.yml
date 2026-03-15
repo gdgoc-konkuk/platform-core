@@ -25,12 +25,12 @@ jobs:
       - name: grant permission to gradle
         run: chmod +x gradlew
 
-      - name: Cache SonarCloud packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
+#      - name: Cache SonarCloud packages
+#        uses: actions/cache@v4
+#        with:
+#          path: ~/.sonar/cache
+#          key: ${{ runner.os }}-sonar
+#          restore-keys: ${{ runner.os }}-sonar
 
       - name: touch application.yml
         run: |
@@ -38,11 +38,14 @@ jobs:
           echo "${{ secrets.APPLICATION_DEV_YML }}" > ./src/main/resources/application.yml
         shell: bash
 
-      - name: Build and analyze
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}  # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew build sonar --info
+      - name: Build
+        run: ./gradlew build
+
+#      - name: Build and analyze
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.TOKEN }}  # Needed to get PR information, if any
+#          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#        run: ./gradlew build sonar --info
 
       - name: Upload Gradle Report
         uses: actions/upload-artifact@v4
