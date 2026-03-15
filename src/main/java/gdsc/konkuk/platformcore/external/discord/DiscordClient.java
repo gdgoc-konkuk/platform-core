@@ -17,7 +17,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class DiscordClient {
 
     @Value("${discord.webhook.url}")
-    private static String WEB_HOOK_URL;
+    private String WEB_HOOK_URL;
 
     private final RestTemplate restTemplate;
 
