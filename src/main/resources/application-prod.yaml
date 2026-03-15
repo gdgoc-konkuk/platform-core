@@ -5,7 +5,11 @@ server:
   forward-headers-strategy: native
   tomcat:
     redirect-context-root: false
-
+management:
+  metrics:
+    enable:
+      processor: false
+      system: false
 spring:
   datasource:
     url: ${ORACLE_URL}
