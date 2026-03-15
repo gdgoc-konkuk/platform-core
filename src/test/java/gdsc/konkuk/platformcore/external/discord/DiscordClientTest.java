@@ -28,8 +28,8 @@ class DiscordClientTest {
     @BeforeEach
     void setUp() {
         openMocks(this);
-        ReflectionTestUtils.setField(subject, "WEB_HOOK_URL", "/hi");
         subject = new DiscordClient(restTemplate);
+        ReflectionTestUtils.setField(subject, "WEB_HOOK_URL", "/hi");
     }
 
     @Test
