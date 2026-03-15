@@ -1,5 +1,5 @@
 # Use a multi-architecture base image that supports ARM64
-FROM openjdk:17
+FROM eclipse-temurin:17-jdk
 
 # Set the working directory in the container
 WORKDIR /app
