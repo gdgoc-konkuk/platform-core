@@ -48,3 +48,7 @@ springdoc:
 jwt:
   secret: test-secret-key-should-be-at-least-32bytes!
   expiration: 86400
+
+discord:
+  webhook:
+    url: http://localhost/test-discord-webhook
